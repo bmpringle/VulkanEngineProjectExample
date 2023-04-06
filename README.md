@@ -7,3 +7,4 @@ Essentialy, this is how it works:
     - This means that when it asks you for executable path, executable name, app name, etc., you should figure out what these values should be.
 4. Put them all one after another in a text file like in build_settings.txt, with a newline at the end.
 5. Use a script like compile_all.sh to pipe your saved inputs to build.py into the python script, so that all you have to do to compile your code is run sh compile_all.sh
+6. On subsequent runs if you don't want to recompile all VulkanEngine dependencies, you can run the compile.sh script which is exactly the same, but passes CBSP instead of A to VulkanEngine/build.py in order to skip the dependency compilation step.
