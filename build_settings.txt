@@ -1,0 +1,9 @@
+O
+OUTSIDE_BUILD_TEST_APP
+./test
+test
+./deploy
+make compile
+make clean
+./
+A
