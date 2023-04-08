@@ -6,4 +6,4 @@ test
 make compile
 make clean
 ./
-A
+./assets
