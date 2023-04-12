@@ -1,7 +1,7 @@
 O
-OUTSIDE_BUILD_TEST_APP
-./test
-test
+3D-Game
+./3dgame
+3dgame
 ./deploy
 make compile
 make clean

@@ -1,61 +1,14 @@
 #include "VKRenderer.h"
 #include "keylogger.h"
 #include <glm/ext/matrix_transform.hpp>
-
-static std::vector<Vertex> cube = {
-  {{0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1, 0, 0}}, //front
-  {{1.0f, 1.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0, 1, 0}},
-  {{0.0f, 1.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1, 1, 0}},
-
-  {{0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1, 0, 0}},
-  {{1.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0, 0, 0}},
-  {{1.0f, 1.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0, 1, 0}},   
-
-  {{0.0f, 1.0f, 1.0f}, {1.0f, 1.0f, 1.0f}, {0, 1, 0}}, //back
-  {{1.0f, 1.0f, 1.0f}, {1.0f, 1.0f, 1.0f}, {1, 1, 0}},
-  {{0.0f, 0.0f, 1.0f}, {1.0f, 1.0f, 1.0f}, {0, 0, 0}},
-
-  {{1.0f, 1.0f, 1.0f}, {1.0f, 1.0f, 1.0f}, {1, 1, 0}},  
-  {{1.0f, 0.0f, 1.0f}, {1.0f, 1.0f, 1.0f}, {1, 0, 0}},
-  {{0.0f, 0.0f, 1.0f}, {1.0f, 1.0f, 1.0f}, {0, 0, 0}},
-
-  {{0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0, 0, 0}}, //left
-  {{0.0f, 1.0f, 1.0f}, {1.0f, 1.0f, 1.0f}, {1, 1, 0}},
-  {{0.0f, 0.0f, 1.0f}, {1.0f, 1.0f, 1.0f}, {1, 0, 0}},
-
-  {{0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0, 0, 0}},
-  {{0.0f, 1.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0, 1, 0}},
-  {{0.0f, 1.0f, 1.0f}, {1.0f, 1.0f, 1.0f}, {1, 1, 0}},
-
-  {{1.0f, 0.0f, 1.0f}, {1.0f, 1.0f, 1.0f}, {0, 0, 0}}, //right
-  {{1.0f, 1.0f, 1.0f}, {1.0f, 1.0f, 1.0f}, {0, 1, 0}},
-  {{1.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1, 0, 0}},
-
-  {{1.0f, 1.0f, 1.0f}, {1.0f, 1.0f, 1.0f}, {0, 1, 0}},
-  {{1.0f, 1.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1, 1, 0}},
-  {{1.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1, 0, 0}},
-  
-  {{1.0f, 1.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0, 0, 0}}, //top
-  {{1.0f, 1.0f, 1.0f}, {1.0f, 1.0f, 1.0f}, {0, 1, 0}},
-  {{0.0f, 1.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1, 0, 0}},
-
-  {{1.0f, 1.0f, 1.0f}, {1.0f, 1.0f, 1.0f}, {0, 1, 0}},
-  {{0.0f, 1.0f, 1.0f}, {1.0f, 1.0f, 1.0f}, {1, 1, 0}},
-  {{0.0f, 1.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1, 0, 0}},
-
-  {{0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0, 0, 0}}, //bottom
-  {{1.0f, 0.0f, 1.0f}, {1.0f, 1.0f, 1.0f}, {1, 1, 0}},
-  {{1.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1, 0, 0}},
-
-  {{0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0, 0, 0}},
-  {{0.0f, 0.0f, 1.0f}, {1.0f, 1.0f, 1.0f}, {0, 1, 0}},
-  {{1.0f, 0.0f, 1.0f}, {1.0f, 1.0f, 1.0f}, {1, 1, 0}},
-};
+#include "ModelLoader.h"
+#include "collision.h"
+#include <unordered_map>
 
 double current_mouse_x = 0;
 double current_mouse_y = 0;
 const double mouse_sensitivity = 0.04;
-double movement_speed = 1.0 / 60.0;
+double movement_speed = 4.0 / 60.0;
 bool is_mouse_captured = true;
 
 //get X and Z values of the camera vector (normalized)
@@ -113,80 +66,156 @@ void createWindowCallbacks(VKRenderer& renderer) {
   renderer.getEngine()->getDisplay()->setCursorPosCallback(mouseCallback);
 }
 
+std::unordered_map<std::string, game_object_type> object_data_map;
+
+const std::string game_models[] = {"floor_tile.obj"};
+const std::string game_model_ids[] = {"floor1x1"};
+const int GAME_MODEL_COUNT = 1;
+
+void world_render_setup(VKRenderer& renderer) {
+  /*
+    load all game models
+  */
+
+  std::vector<std::string> textures_to_load;
+
+  for(int i = 0; i < GAME_MODEL_COUNT; ++i) {
+    object_data_map[game_model_ids[i]] = game_object_type("assets/", game_models[i], game_model_ids[i]);
+    auto [id, object_type] = *(object_data_map.find(game_model_ids[i]));
+
+    if(std::find(textures_to_load.cbegin(), textures_to_load.cend(), object_type.get_texture()) == textures_to_load.cend()) {
+      textures_to_load.push_back(object_type.get_texture());
+    }
+  }
+
+  /*
+    Load a texture array with id "game-textures" with all game textures. this works because they are all the same size.
+  */
+  renderer.loadTextureArray("game-textures", textures_to_load);
+
+  //set the array with id "game-textures" to be the currently in use texture array
+  renderer.setCurrentTextureArray("game-textures");
+
+  //go through all models and set their UV values properly
+
+  for(auto [id, object_type] : object_data_map) {
+    for(Vertex& v : object_type.get_mutable_vertices()) { 
+      v.texCoord[2] = renderer.getTextureArrayID("game-textures", object_type.get_texture());
+    }
+
+    //setup imported model and instances
+    renderer.setModel(id, object_type.get_vertices());
+  }
+
+  //set the camera's starting position to be (2, 2, 0)
+  renderer.getCameraPosition() = glm::vec3(0, 2, 0);
+} 
+
+void do_movement_checks(VKRenderer& renderer) {
+  glm::vec3 base_movement_vector = (float)movement_speed * getHorizontalCameraVector(renderer);
+
+  //move in the horizontal direction you are looking when W is held
+  if(is_key_held(GLFW_KEY_W)) {
+    renderer.getCameraPosition() += base_movement_vector;
+  }
+
+  //move in the opposite of the horizontal direction you are looking when S is held
+  if(is_key_held(GLFW_KEY_S)) {
+    renderer.getCameraPosition() += -base_movement_vector;
+  }
+
+  //move 90 degrees to the left of the horizontal direction you are looking when A is held
+  if(is_key_held(GLFW_KEY_A)) {
+    glm::vec3 rotated_move = base_movement_vector;
+    std::swap(rotated_move.x, rotated_move.z);
+    rotated_move.z = -rotated_move.z;
+    renderer.getCameraPosition() += rotated_move;
+  }
+
+  //move 90 degrees to the right of the horizontal direction you are looking when D is held
+  if(is_key_held(GLFW_KEY_D)) {
+    glm::vec3 rotated_move = base_movement_vector;
+    std::swap(rotated_move.x, rotated_move.z);
+    rotated_move.x = -rotated_move.x;
+    renderer.getCameraPosition() += rotated_move;
+  }
+}
+
+void do_cursor_mode_check(VKRenderer& renderer) {
+  auto display = renderer.getEngine()->getDisplay();
+
+  //toggle cursor with the G key
+  if(is_key_pressed(GLFW_KEY_G)) {
+    auto mode = GLFW_CURSOR_NORMAL;
+    if(glfwGetInputMode(display->getInternalWindow(), GLFW_CURSOR) == mode) {
+      mode = GLFW_CURSOR_DISABLED;
+      is_mouse_captured = true;
+    }else {
+      is_mouse_captured = false;
+    }
+    
+    glfwSetInputMode(display->getInternalWindow(), GLFW_CURSOR, mode);
+  }
+}
+
+void do_esc_key_check(VKRenderer& renderer) {
+  auto display = renderer.getEngine()->getDisplay();
+
+  //set the window to clsoe if the escape key is pressed
+  if(is_key_pressed(GLFW_KEY_ESCAPE)) {
+    glfwSetWindowShouldClose(display->getInternalWindow(), 1);
+  }
+}
+
+auto previous_tick_time = std::chrono::high_resolution_clock::now();
+const int LOGIC_TICKS_PER_SECOND = 60;
+
+int calculate_missed_ticks() {
+  return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - previous_tick_time).count() / 1000.0 * LOGIC_TICKS_PER_SECOND;
+}
+
 int main() {
   //init renderer
   VKRenderer renderer = VKRenderer();
 
-  //create a cube instance
-  std::vector<InstanceData> data = {InstanceData({{0, 0, 3}})};
+  //setup world render
+  world_render_setup(renderer);
 
-  //set cube model to the "mdl" id
-  renderer.setModel("mdl", cube);
+  std::vector<InstanceData> floor_data;
 
-  //add instances in data vector to the "s1" instance set
-  renderer.addInstancesToModel("mdl", "s1", data);
+  //create floor
+  for(int x = -49; x < 50; ++x) {
+    for(int z = -49; z < 50; ++z) {
+      floor_data.push_back(InstanceData({{x * 10, 0, z * 10}}));
+    }
+  }
 
-  /*
-    load a texture array with id "1" with just the dirt image. Note that we don't need to 
-    use VKRenderer::getTextureArrayID to get the texture id that should be in the cube model data because 
-    with just one texture in the array, the texture id will always be 0.
-  */
-  renderer.loadTextureArray("1", {"assets/dirt.png"});
-
-  //set the array with id "1" to be the currently in use texture array
-  renderer.setCurrentTextureArray("1");
-
-  //set the camera's starting position to be (2, 2, 0)
-  renderer.getCameraPosition() = glm::vec3(2, 2, 0);
+  renderer.addInstancesToModel("floor1x1", "s1", floor_data);
 
   //set window callbacks
   createWindowCallbacks(renderer);
 
+  auto display = renderer.getEngine()->getDisplay();
+
+  previous_tick_time = std::chrono::high_resolution_clock::now();
+
   //run the main loop while the window should remain open
-  while(!renderer.getEngine()->getDisplay()->shouldWindowClose()) {
-    //move in the horizontal direction you are looking when W is held
-    if(is_key_held(GLFW_KEY_W)) {
-      renderer.getCameraPosition() += (float)movement_speed * getHorizontalCameraVector(renderer);
-    }
+  while(!display->shouldWindowClose()) {
+    int missed_ticks = calculate_missed_ticks();
 
-    //move in the opposite of the horizontal direction you are looking when S is held
-    if(is_key_held(GLFW_KEY_S)) {
-      renderer.getCameraPosition() += -(float)movement_speed * getHorizontalCameraVector(renderer);
-    }
+    while(missed_ticks > 0) {
+      previous_tick_time = std::chrono::high_resolution_clock::now();
 
-    //move 90 degrees to the left of the horizontal direction you are looking when A is held
-    if(is_key_held(GLFW_KEY_A)) {
-      glm::vec3 rotated_move = getHorizontalCameraVector(renderer);
-      std::swap(rotated_move.x, rotated_move.z);
-      rotated_move.z = -rotated_move.z;
-      renderer.getCameraPosition() += (float)movement_speed * rotated_move;
-    }
-
-    //move 90 degrees to the right of the horizontal direction you are looking when D is held
-    if(is_key_held(GLFW_KEY_D)) {
-      glm::vec3 rotated_move = getHorizontalCameraVector(renderer);
-      std::swap(rotated_move.x, rotated_move.z);
-      rotated_move.x = -rotated_move.x;
-      renderer.getCameraPosition() += (float)movement_speed * rotated_move;
-    }
-
-    //toggle cursor with the G key
-    if(is_key_pressed(GLFW_KEY_G)) {
-      auto mode = GLFW_CURSOR_NORMAL;
-      if(glfwGetInputMode(renderer.getEngine()->getDisplay()->getInternalWindow(), GLFW_CURSOR) == mode) {
-        mode = GLFW_CURSOR_DISABLED;
-        is_mouse_captured = true;
-      }else {
-        is_mouse_captured = false;
+      for(int i = 0; i < missed_ticks; ++i) {
+        do_movement_checks(renderer);
       }
-      
-      glfwSetInputMode(renderer.getEngine()->getDisplay()->getInternalWindow(), GLFW_CURSOR, mode);
+
+      missed_ticks = calculate_missed_ticks();
     }
 
-    //set the window to clsoe if the escape key is pressed
-    if(is_key_pressed(GLFW_KEY_ESCAPE)) {
-      glfwSetWindowShouldClose(renderer.getEngine()->getDisplay()->getInternalWindow(), 1);
-    }
+    do_cursor_mode_check(renderer);
+
+    do_esc_key_check(renderer);
 
     //record command buffers
     renderer.recordCommandBuffers();
